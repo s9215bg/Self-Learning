@@ -74,23 +74,35 @@ inputForm.addEventListener('submit', (e) => {
 });
 
 async function processCommand(rawInput) {
-    const parts = rawInput.split(/\s+/);
+    const parts = rawInput.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return;
+
     const cmd = parts[0].toLowerCase();
-    const args = parts.slice(1);
+    const args = [];
+    const options = [];
+
+    // Separate options (starting with -) from arguments
+    for (let i = 1; i < parts.length; i++) {
+        if (parts[i].startsWith('-')) {
+            options.push(parts[i]);
+        } else {
+            args.push(parts[i]);
+        }
+    }
 
     logOutput(`<span class="prompt-line">${getPromptText()}</span> ${rawInput}`);
 
     switch (cmd) {
         case 'help':
             logOutput(`Available commands:
-  ls [path]    - List children
-  cd [path]    - Change directory
-  mkdir [name] - Create a node
-  rm [path]    - Remove a node
-  cat [path]   - Show node value
-  clear        - Clear terminal
-  pwd          - Print working directory
-  help         - Show this message`);
+  ls [-l] [path] - List children
+  cd [path]      - Change directory
+  mkdir [path]   - Create a node
+  rm [path]      - Remove a node
+  cat [path]     - Show node value
+  clear          - Clear terminal
+  pwd            - Print working directory
+  help           - Show this message`);
             break;
 
         case 'clear':
@@ -102,7 +114,7 @@ async function processCommand(rawInput) {
             break;
 
         case 'ls':
-            handleLs(args[0]);
+            handleLs(args[0], options);
             break;
 
         case 'cd':
@@ -130,20 +142,62 @@ async function processCommand(rawInput) {
 
 // --- Command Handlers ---
 
-function handleLs(targetPath = '.') {
+function handleLs(targetPath = '.', options = []) {
+    const isLong = options.includes('-l');
     const fullPath = resolvePath(targetPath);
     const data = getNestedData(dbSnapshot, fullPath);
 
     if (data === undefined || data === null) {
         logOutput(`ls: cannot access '${targetPath}': No such path`);
-    } else if (typeof data !== 'object') {
-        logOutput(targetPath); // It's a leaf node
+        return;
+    }
+
+    if (typeof data !== 'object') {
+        if (isLong) {
+            logOutput(formatLsLong(targetPath.split('/').pop() || 'node', data));
+        } else {
+            logOutput(targetPath);
+        }
     } else {
         const keys = Object.keys(data).filter(k => k !== '.created');
-        if (keys.length > 0) {
+        if (keys.length === 0) return;
+
+        if (isLong) {
+            keys.forEach(key => {
+                logOutput(formatLsLong(key, data[key]));
+            });
+        } else {
             logOutput(keys.join('   '));
         }
     }
+}
+
+function formatLsLong(name, value) {
+    const isDir = value !== null && typeof value === 'object';
+    const perms = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
+    const owner = 'user';
+    const group = 'group';
+    const size = isDir ? 4096 : JSON.stringify(value).length;
+    
+    // Date formatting
+    let dateStr = "";
+    const created = (value && typeof value === 'object') ? value['.created'] : null;
+    const dateObj = created ? new Date(created) : new Date();
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const month = months[dateObj.getMonth()];
+    const day = dateObj.getDate().toString().padStart(2, ' ');
+    const hours = dateObj.getHours().toString().padStart(2, '0');
+    const mins = dateObj.getMinutes().toString().padStart(2, '0');
+    dateStr = `${month} ${day} ${hours}:${mins}`;
+
+    return `<div class="ls-row">
+        <span class="ls-perms">${perms}</span>
+        <span class="ls-owner">${owner}</span>
+        <span class="ls-group">${group}</span>
+        <span class="ls-size">${size.toString().padStart(5, ' ')}</span>
+        <span class="ls-date">${dateStr}</span>
+        <span class="ls-name ${isDir ? 'is-dir' : ''}">${name}</span>
+    </div>`;
 }
 
 function handleCd(targetPath) {

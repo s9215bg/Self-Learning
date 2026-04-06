@@ -114,6 +114,21 @@ body {
   margin-right: 8px;
 }
 
+/* ls -l styling */
+.ls-row {
+  display: flex;
+  gap: 12px;
+  font-family: 'Fira Code', monospace;
+  white-space: pre;
+}
+
+.ls-perms { color: var(--success-color); }
+.ls-owner, .ls-group { color: var(--text-muted); }
+.ls-size { color: var(--accent-color); text-align: right; min-width: 45px; }
+.ls-date { color: var(--text-muted); }
+.ls-name { color: var(--text-main); font-weight: bold; }
+.ls-name.is-dir { color: var(--accent-color); }
+
 #terminal-interface {
   border-top: 1px solid var(--border-color);
   background-color: var(--bg-color);
