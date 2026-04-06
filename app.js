@@ -74,32 +74,55 @@ inputForm.addEventListener('submit', (e) => {
 });
 
 async function processCommand(rawInput) {
-    const parts = rawInput.split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return;
+    // Robust parsing: handles quotes and redirection
+    const tokens = [];
+    const regex = /[^\s"'>]+|"[^"]*"|'[^']*'|>/g;
+    let match;
+    while ((match = regex.exec(rawInput)) !== null) {
+        let token = match[0];
+        if ((token.startsWith('"') && token.endsWith('"')) || (token.startsWith("'") && token.endsWith("'"))) {
+            token = token.substring(1, token.length - 1);
+        }
+        tokens.push(token);
+    }
 
-    const cmd = parts[0].toLowerCase();
+    if (tokens.length === 0) return;
+
+    // Handle Redirection ">"
+    let redirectPath = null;
+    let commandTokens = [...tokens];
+    const redirectIndex = tokens.indexOf('>');
+    if (redirectIndex !== -1) {
+        commandTokens = tokens.slice(0, redirectIndex);
+        redirectPath = tokens[redirectIndex + 1];
+    }
+
+    const cmd = commandTokens[0].toLowerCase();
     const args = [];
     const options = [];
 
-    // Separate options (starting with -) from arguments
-    for (let i = 1; i < parts.length; i++) {
-        if (parts[i].startsWith('-')) {
-            options.push(parts[i]);
+    for (let i = 1; i < commandTokens.length; i++) {
+        if (commandTokens[i].startsWith('-')) {
+            options.push(commandTokens[i]);
         } else {
-            args.push(parts[i]);
+            args.push(commandTokens[i]);
         }
     }
 
     logOutput(`<span class="prompt-line">${getPromptText()}</span> ${rawInput}`);
+
+    let result = null; // Store output for redirection
 
     switch (cmd) {
         case 'help':
             logOutput(`Available commands:
   ls [-l] [path] - List children
   cd [path]      - Change directory
-  mkdir [path]   - Create a node
+  mkdir [path]   - Create a node (directory)
+  touch [path]   - Create an empty node (file)
   rm [path]      - Remove a node
   cat [path]     - Show node value
+  echo [text] [> path] - Print text or save to path
   clear          - Clear terminal
   pwd            - Print working directory
   help           - Show this message`);
@@ -125,6 +148,10 @@ async function processCommand(rawInput) {
             handleMkdir(args[0]);
             break;
 
+        case 'touch':
+            handleTouch(args[0]);
+            break;
+
         case 'rm':
             handleRm(args[0]);
             break;
@@ -133,11 +160,34 @@ async function processCommand(rawInput) {
             handleCat(args[0]);
             break;
 
+        case 'echo':
+            result = args.join(' ');
+            if (redirectPath) {
+                await handleWriteData(redirectPath, result);
+            } else {
+                logOutput(result);
+            }
+            break;
+
         default:
             logOutput(`-bash: ${cmd}: command not found`, 'error');
     }
 
     scrollToBottom();
+}
+
+async function handleWriteData(target, value) {
+    if (!target) {
+        logOutput('bash: syntax error near unexpected token `newline`');
+        return;
+    }
+    const pathSegments = resolvePath(target);
+    try {
+        await set(ref(db, pathSegments.join('/')), value);
+        logOutput(`Written to ${target}`);
+    } catch (e) {
+        logOutput(`bash: ${target}: ${e.message}`, 'error');
+    }
 }
 
 // --- Command Handlers ---
@@ -159,7 +209,7 @@ function handleLs(targetPath = '.', options = []) {
             logOutput(targetPath);
         }
     } else {
-        const keys = Object.keys(data).filter(k => k !== '.created');
+        const keys = Object.keys(data).filter(k => k !== '_createdAt');
         if (keys.length === 0) return;
 
         if (isLong) {
@@ -181,7 +231,7 @@ function formatLsLong(name, value) {
     
     // Date formatting
     let dateStr = "";
-    const created = (value && typeof value === 'object') ? value['.created'] : null;
+    const created = (value && typeof value === 'object') ? value['_createdAt'] : null;
     const dateObj = created ? new Date(created) : new Date();
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const month = months[dateObj.getMonth()];
@@ -232,13 +282,39 @@ async function handleMkdir(name) {
     }
     const targetPath = resolvePath(name);
     try {
+        const snapshot = await get(ref(db, targetPath.join('/')));
+        if (snapshot.exists()) {
+            logOutput(`mkdir: cannot create directory '${name}': File exists`, 'error');
+            return;
+        }
         await set(ref(db, targetPath.join('/')), {
-            ".created": Date.now(),
+            "_createdAt": Date.now(),
             "info": "Empty directory"
         });
         logOutput(`Created node: ${name}`);
     } catch (e) {
         logOutput(`mkdir: ${e.message}`, 'error');
+    }
+}
+
+async function handleTouch(name) {
+    if (!name) {
+        logOutput('touch: missing operand');
+        return;
+    }
+    const targetPath = resolvePath(name);
+    try {
+        const snapshot = await get(ref(db, targetPath.join('/')));
+        if (snapshot.exists()) {
+            // Standard touch behavior: don't overwrite if it exists
+            logOutput(`touch: ${name}: File already exists (updated timestamp)`);
+            return;
+        }
+        // Create an empty string node (acts like a file)
+        await set(ref(db, targetPath.join('/')), "");
+        logOutput(`Created file: ${name}`);
+    } catch (e) {
+        logOutput(`touch: ${e.message}`, 'error');
     }
 }
 
@@ -407,7 +483,7 @@ function createTreeNode(key, value) {
         
         const childrenContainer = document.createElement('div');
         Object.entries(value).forEach(([childKey, childValue]) => {
-            if (childKey === '.created') return;
+            if (childKey === '_createdAt') return;
             childrenContainer.appendChild(createTreeNode(childKey, childValue));
         });
         container.appendChild(childrenContainer);
