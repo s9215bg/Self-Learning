@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Firebase Bash Simulator</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <script type="importmap">
+    {
+      "imports": {
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js",
+        "firebase/database": "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js",
+        "firebase/analytics": "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <!-- 資料監控區 -->
+        <section id="monitor-container">
+            <header class="panel-header">
+                <span class="icon">📁</span>
+                <h2>Firebase RTDB Monitor</h2>
+                <div id="connection-status" class="status-dot"></div>
+            </header>
+            <div id="db-monitor">
+                <div class="monitor-placeholder">正在連接資料庫...</div>
+            </div>
+        </section>
+
+        <!-- 終端機操作區 -->
+        <section id="terminal-container">
+            <div id="terminal-output">
+                <div class="line">Firebase Shell Simulator v1.0.0</div>
+                <div class="line">Type 'help' to see available commands.</div>
+            </div>
+            
+            <div id="terminal-interface">
+                <!-- 虛擬按鍵輔助列 -->
+                <div id="keyboard-helper">
+                    <button type="button" data-key="Tab">Tab</button>
+                    <button type="button" data-key="ArrowUp">↑</button>
+                    <button type="button" data-key="ArrowDown">↓</button>
+                    <button type="button" data-key="/">/</button>
+                    <button type="button" data-key="-">-</button>
+                    <button type="button" data-key="clear">Esc</button>
+                </div>
+                
+                <form id="input-form">
+                    <span id="prompt">~/ $</span>
+                    <input type="text" id="terminal-input" 
+                           autocomplete="off" 
+                           autocorrect="off" 
+                           autocapitalize="none" 
+                           spellcheck="false" 
+                           font-size="16px">
+                    <button type="submit" id="send-btn">
+                        <svg viewBox="0 0 24 24" width="18" height="18">
+                            <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+:root {
+  --bg-color: #0d1117;
+  --panel-bg: #161b22;
+  --terminal-bg: #010409;
+  --border-color: #30363d;
+  --text-main: #c9d1d9;
+  --text-muted: #8b949e;
+  --accent-color: #58a6ff;
+  --success-color: #3fb950;
+  --header-height: 48px;
+  --helper-height: 36px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+/*資料監控區*/
+#monitor-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.panel-header {
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background-color: var(--panel-bg);
+  border-bottom: 1px solid var(--border-color);
+  gap: 12px;
+}
+
+.panel-header h2 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #f85149;
+}
+
+.status-dot.online {
+  background-color: var(--success-color);
+  box-shadow: 0 0 5px var(--success-color);
+}
+
+#db-monitor {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  font-family: 'Fira Code', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.monitor-placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 40px;
+}
+
+/*終端機區*/
+#terminal-container {
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--terminal-bg);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: hidden;
+}
+
+#terminal-output {
+  flex: 1;
+  padding: 12px;
+  font-family: 'Fira Code', monospace;
+  font-size: 13px;
+  overflow-y: auto;
+  color: var(--text-main);
+}
+
+.line {
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.prompt-line {
+  color: var(--accent-color);
+  margin-right: 8px;
+}
+
+#terminal-interface {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-color);
+}
+
+/*虛擬輔助列*/
+#keyboard-helper {
+  height: var(--helper-height);
+  display: flex;
+  background-color: var(--panel-bg);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#keyboard-helper button {
+  flex: 1;
+  border: none;
+  background: none;
+  color: var(--text-main);
+  font-size: 13px;
+  font-family: 'Fira Code', monospace;
+  border-right: 1px solid var(--border-color);
+  padding: 0 8px;
+  min-width: 60px;
+}
+
+#keyboard-helper button:active {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+/*輸入列*/
+#input-form {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 8px;
+}
+
+#prompt {
+  color: var(--accent-color);
+  font-family: 'Fira Code', monospace;
+  font-weight: bold;
+}
+
+#terminal-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-main);
+  font-family: 'Fira Code', monospace;
+  font-size: 16px; /* 防止 iOS 縮放 */
+}
+
+#send-btn {
+  background: transparent;
+  color: var(--accent-color);
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#send-btn:active {
+  transform: scale(0.9);
+}
+
+/* Tree Viewer Custom Styling */
+.tree-node {
+  margin-left: 1.5em;
+  position: relative;
+}
+
+.tree-key { color: #88c0d0; }
+.tree-string { color: #a3be8c; }
+.tree-number { color: #ebcb8b; }
+.tree-boolean { color: #d08770; }
+.tree-null { color: #bf616a; }
+
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+  #terminal-container {
+    flex: 0 0 50%;
+  }
+}
